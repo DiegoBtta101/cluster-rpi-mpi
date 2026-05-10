@@ -1,0 +1,47 @@
+---
+- name: Configurar Servidor NFS en el Nodo Maestro
+  hosts: Nodo1
+  become: yes
+  tasks:
+    - name: Actualizar repositorios e instalar servidor NFS
+      apt:
+        name: nfs-kernel-server
+        state: present
+        update_cache: yes
+
+    - name: Configurar /etc/exports para compartir /home
+      # Usamos * para permitir a la red local/Tailscale. 
+      # no_root_squash es común en clústeres privados para facilitar la administración.
+      lineinfile:
+        path: /etc/exports
+        line: "/home  *(rw,sync,no_subtree_check,no_root_squash)"
+        state: present
+
+    - name: Aplicar exportación NFS
+      command: exportfs -ra
+
+    - name: Reiniciar y habilitar el servicio NFS
+      service:
+        name: nfs-kernel-server
+        state: restarted
+        enabled: yes
+
+- name: Configurar Clientes NFS en los Nodos Esclavos
+  hosts: slaves
+  become: yes
+  tasks:
+    - name: Actualizar repositorios e instalar cliente NFS
+      apt:
+        name: nfs-common
+        state: present
+        update_cache: yes
+
+    - name: Montar el directorio /home desde el Maestro permanentemente
+      # Usamos directamente la IP física de Nodo1 para evitar fallos de DNS
+      mount:
+        path: /home
+        src: "10.4.9.212:/home"
+        fstype: nfs
+        # Opciones recomendadas para estabilidad en HPC
+        opts: "defaults,rw,sync,hard,intr" 
+        state: mounted

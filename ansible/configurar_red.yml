@@ -1,0 +1,22 @@
+---
+- name: Configurar IPs Estáticas en el Clúster
+  hosts: all
+  become: yes
+  tasks:
+    - name: Obtener el nombre de la conexión activa en eth0
+      shell: "nmcli -t -f NAME,DEVICE connection show --active | grep eth0 | cut -d: -f1"
+      register: active_conn
+      changed_when: false
+
+    - name: Modificar la conexión activa para usar IP estática
+      command: >
+        nmcli connection modify "{{ active_conn.stdout }}"
+        ipv4.addresses {{ ip_estatica }}/23
+        ipv4.gateway 10.4.8.1
+        ipv4.dns "8.8.8.8,1.1.1.1,10.4.8.1"
+        ipv4.method manual
+
+    - name: Reiniciar la interfaz de red para aplicar cambios
+      command: nmcli connection up "{{ active_conn.stdout }}"
+      async: 10
+      poll: 0

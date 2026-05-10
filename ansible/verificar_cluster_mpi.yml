@@ -1,0 +1,23 @@
+---
+- name: Verificación y estandarización del entorno MPI en el clúster
+  hosts: all
+  become: true # Necesitamos privilegios de superusuario para instalar/verificar paquetes
+  tasks:
+    - name: Asegurar que los paquetes base y enlaces de compilación estén instalados
+      ansible.builtin.apt:
+        name:
+          - mpich
+          - libmpich-dev
+          - mpi-default-dev  # Soluciona el problema de las rutas de los headers (mpi.h)
+          - python3-mpi4py   # En Debian/Raspbian moderno, es más estable instalarlo por apt que por pip
+        state: present
+        update_cache: yes
+
+    - name: Verificar la configuración del wrapper del compilador C (mpicc)
+      ansible.builtin.command: mpicc -show
+      register: mpicc_check
+      changed_when: false # Esto le dice a Ansible que este comando es solo de lectura, no altera el sistema
+
+    - name: Reporte de estado del compilador en cada nodo
+      ansible.builtin.debug:
+        msg: "El nodo {{ inventory_hostname }} tiene configurado mpicc como: {{ mpicc_check.stdout }}"

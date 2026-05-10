@@ -1,0 +1,34 @@
+---
+- name: Resetear entorno MPI a MPICH puro y blindar SSH
+  hosts: all
+  tasks:
+    - name: 1. Purgar OpenMPI (Requiere sudo)
+      ansible.builtin.apt:
+        name: 
+          - openmpi-bin
+          - openmpi-common
+          - libopenmpi-dev
+        state: absent
+        purge: yes
+      become: yes
+
+    - name: 2. Asegurar MPICH puro (Requiere sudo)
+      ansible.builtin.apt:
+        name: 
+          - mpich
+          - libmpich-dev
+          - python3-mpi4py
+        state: present
+      become: yes
+
+    - name: 3. Blindar SSH contra cuelgues silenciosos (Usuario local)
+      ansible.builtin.blockinfile:
+        path: "~/.ssh/config"
+        create: yes
+        mode: '0600'
+        block: |
+          Host 10.4.*.* Nodo*.local
+              StrictHostKeyChecking no
+              UserKnownHostsFile=/dev/null
+              LogLevel ERROR
+      become: no

@@ -1,0 +1,28 @@
+---
+- name: Tabula Rasa - Limpieza profunda de usuarios de prueba
+  hosts: all
+  become: yes
+  vars:
+    # Lista plana de los usuarios a eliminar
+    usuarios_a_borrar:
+      - estudiante1
+      - estudiante2
+      - docente
+
+  tasks:
+    - name: 1. Matar cualquier proceso activo de los usuarios (para evitar bloqueos al borrar)
+      shell: "pkill -u {{ item }} || true"
+      loop: "{{ usuarios_a_borrar }}"
+
+    - name: 2. Eliminar usuarios y purgar sus directorios home (-r) en todos los nodos
+      user:
+        name: "{{ item }}"
+        state: absent
+        remove: yes
+        force: yes
+      loop: "{{ usuarios_a_borrar }}"
+
+    - name: 3. Eliminar el grupo unificado mpi_users
+      group:
+        name: mpi_users
+        state: absent

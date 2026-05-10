@@ -1,0 +1,69 @@
+---
+- name: "Configuración Maestra Definitiva de Usuarios para Clúster MPI"
+  hosts: all
+  become: yes
+  vars:
+    password_plain: "9087"
+    master_node: "Nodo1" 
+
+    cluster_users:
+      - { name: 'estudiante1', uid: 2001 }
+      - { name: 'estudiante2', uid: 2002 }
+      - { name: 'docente', uid: 2003 }
+
+  tasks:
+    - name: "1. Instalar dependencias de seguridad"
+      apt:
+        name: python3-passlib
+        state: present
+
+    - name: "2. Crear grupo mpi_users (GID 2000)"
+      group:
+        name: mpi_users
+        gid: 2000
+        state: present
+
+    - name: "3. Crear cuentas de usuario en todos los nodos"
+      user:
+        name: "{{ item.name }}"
+        uid: "{{ item.uid }}"
+        group: mpi_users
+        password: "{{ password_plain | password_hash('sha512') }}"
+        shell: /bin/bash
+        create_home: "{{ 'yes' if (inventory_hostname | lower == master_node | lower) else 'no' }}"
+        generate_ssh_key: "{{ 'yes' if (inventory_hostname | lower == master_node | lower) else 'no' }}"
+        ssh_key_bits: 2048
+        ssh_key_file: .ssh/id_rsa
+      loop: "{{ cluster_users }}"
+
+    - name: "4. Forzar creación y permisos de carpetas de Aislamiento (Solo Maestro)"
+      file:
+        path: "/home/{{ item.name }}"
+        state: directory
+        mode: '0700'
+        owner: "{{ item.name }}"
+        group: mpi_users
+      loop: "{{ cluster_users }}"
+      when: inventory_hostname | lower == master_node | lower
+
+    - name: "5. Configurar SSH Passwordless (Solo Maestro)"
+      shell: |
+        cat /home/{{ item.name }}/.ssh/id_rsa.pub > /home/{{ item.name }}/.ssh/authorized_keys
+        chown {{ item.name }}:mpi_users /home/{{ item.name }}/.ssh/authorized_keys
+        chmod 600 /home/{{ item.name }}/.ssh/authorized_keys
+      loop: "{{ cluster_users }}"
+      when: inventory_hostname | lower == master_node | lower
+      args:
+        executable: /bin/bash
+
+    - name: "6. Magia Negra: Auto-Known Hosts para MPI fluido"
+      copy:
+        dest: "/home/{{ item.name }}/.ssh/config"
+        content: |
+          Host *
+              StrictHostKeyChecking accept-new
+        mode: '0600'
+        owner: "{{ item.name }}"
+        group: mpi_users
+      loop: "{{ cluster_users }}"
+      when: inventory_hostname | lower == master_node | lower

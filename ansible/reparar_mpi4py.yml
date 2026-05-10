@@ -1,0 +1,18 @@
+---
+- name: Reconstrucción global de mpi4py estrictamente contra MPICH
+  hosts: all
+  become: yes  # AHORA SÍ somos root para instalar a nivel sistema para todos los usuarios
+
+  tasks:
+    - name: Desinstalar la versión corrupta de mpi4py (saltando la protección)
+      command: pip3 uninstall -y mpi4py --break-system-packages
+      ignore_errors: yes
+
+    - name: Limpiar la caché de pip global
+      command: pip3 cache purge
+      ignore_errors: yes
+
+    - name: Recompilar e instalar mpi4py globalmente forzando las cabeceras de MPICH
+      environment:
+        MPICC: /usr/bin/mpicc.mpich
+      command: pip3 install --no-cache-dir mpi4py --break-system-packages

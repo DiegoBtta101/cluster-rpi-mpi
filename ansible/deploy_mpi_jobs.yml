@@ -1,0 +1,23 @@
+---
+- name: Preparar y distribuir entorno de trabajo MPI a los nodos esclavos
+  hosts: slaves
+  gather_facts: false  # Ahorra CPU y RAM al no recopilar datos del sistema que no necesitamos para esta tarea
+  
+  tasks:
+    - name: Asegurar que el directorio de trabajo exista
+      ansible.builtin.file:
+        path: "~/mpi_jobs"
+        state: directory
+        mode: '0755' # Permite al propietario leer/escribir/ejecutar, y a otros solo leer/ejecutar
+
+    - name: Distribuir código fuente C (hello.c)
+      ansible.builtin.copy:
+        src: "~/mpi_jobs/hello.c"
+        dest: "~/mpi_jobs/hello.c"
+        mode: '0644' # Lectura/escritura para el propietario, solo lectura para el resto
+
+    - name: Distribuir código fuente Python (hello.py)
+      ansible.builtin.copy:
+        src: "~/mpi_jobs/hello.py"
+        dest: "~/mpi_jobs/hello.py"
+        mode: '0644'

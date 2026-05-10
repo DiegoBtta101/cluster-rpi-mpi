@@ -1,0 +1,27 @@
+---
+- name: Fase 0 - Preparación de Topología SSH Simétrica (Usuario Admin)
+  hosts: all
+  become: no  # Importante: Ejecuta las pruebas en tu usuario actual, no como root absoluto.
+  tasks:
+    - name: Asegurar que el directorio .ssh existe
+      file:
+        path: "~/.ssh"
+        state: directory
+        mode: '0700'
+
+    - name: Generar llave SSH en TODOS los nodos
+      openssh_keypair:
+        path: "~/.ssh/id_rsa"
+        size: 2048
+
+    - name: Leer la llave pública de cada nodo
+      slurp:
+        src: "~/.ssh/id_rsa.pub"
+      register: llaves_publicas
+
+    - name: Inyectar TODAS las llaves en el authorized_keys de TODOS los nodos
+      authorized_key:
+        user: "{{ ansible_user_id }}"
+        state: present
+        key: "{{ hostvars[item]['llaves_publicas']['content'] | b64decode }}"
+      loop: "{{ ansible_play_hosts }}"
