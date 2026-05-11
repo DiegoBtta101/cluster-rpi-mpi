@@ -8,27 +8,43 @@ Este documento constituye la guía oficial para la puesta en marcha, validación
 </p>
 
 ---
-## 0. Acceso al Clúster (Red VPN y SSH)
+## Acceso al Clúster (Red VPN y SSH)
 
 Para interactuar con el clúster desde tu máquina local, debes unirte a la red privada virtual (VPN) del laboratorio mediante **Tailscale** y, posteriormente, iniciar sesión vía SSH en el Nodo Maestro.
 
-### Paso 1: Unirse a la Red de Tailscale
-1. Haz clic en el siguiente enlace de invitación para acceder a la red del clúster:
+### Unirse a la Red de Tailscale
+1. Crea una cuenta en TailScale en el siguiente enlace: 👉 **[Enlace de Registro a TailScale](https://login.tailscale.com/start)** **IMPORTANTE:** Debes crear una cuenta o iniciar sesión utilizando obligatoriamente un **correo electrónico personal** (ej. @gmail.com, @outlook.com). El sistema **no permite** el registro con correos institucionales de la universidad.
+
+2.  Contesta la encuesta que pide TailScale, y dale en añadir tu primer dispositivo. **Tailscale** te pedirá descargar su software a través del siguiente enlace: 👉 **[Enlace de Descarga de TailScale](https://tailscale.com/download/windows)**.
+
+3. Selecciona el cliente correspondiente a tu sistema operativo (Windows, macOS, Linux, iOS o Android).
+
+4. Abre la aplicación de Tailscale en tu equipo e inicia sesión utilizando **el mismo correo personal** que utilizaste en el Paso 1.
+
+5. Asegúrate de que el cliente de Tailscale esté activo (estado "Connected" o "Running" en tu barra de tareas).
+
+6. Una vez instalado TailScale, el software reconocerá tu dispositivo y en la página de registro te pedirá añadir un segundo dispositivo, desplázate hacia abajo y dale click en "Saltar esta introducción":
+
+<p align="center">
+<img src="docs/imagenes/Skip_Introduction.jpeg" width="48%" />
+</p>
+
+8. Entra en el siguiente enlace de invitación para acceder a la red del clúster:
    👉 **[Enlace de Invitación Tailscale](https://login.tailscale.com/admin/invite/6Jf3tBqjDKJn6x9s8Zi811)**
-2. **IMPORTANTE:** Debes crear una cuenta o iniciar sesión utilizando obligatoriamente un **correo electrónico personal** (ej. @gmail.com, @outlook.com). El sistema **no permite** el registro con correos institucionales de la universidad.
 
-### Paso 2: Descargar e Instalar Tailscale
-1. Ingresa a la página oficial de descargas: [tailscale.com/download](https://tailscale.com/download).
-2. Descarga e instala el cliente correspondiente a tu sistema operativo (Windows, macOS, Linux, iOS o Android).
-3. Abre la aplicación de Tailscale en tu equipo e inicia sesión utilizando **el mismo correo personal** que utilizaste en el Paso 1.
-4. Asegúrate de que el cliente de Tailscale esté activo (estado "Connected" o "Running" en tu barra de tareas).
+<p align="center">
+<img src="docs/imagenes/Invitation.jpg" width="48%" />
+</p>
 
-### Paso 3: Conexión al Nodo Maestro por SSH
+
+
+
+### Conexión al Nodo Maestro por SSH
 Una vez que Tailscale esté ejecutándose, tu computadora ya se encuentra dentro de la misma red local que el clúster. Ahora usarás la terminal de tu sistema (Símbolo del sistema, PowerShell, Terminal de macOS o Linux) para conectarte al nodo principal.
 
 **Credenciales de Acceso:**
 * **IP del Nodo Maestro:** `100.67.252.27`
-* **Usuario:** Tu nombre de usuario sigue el formato **#_de_código_estudiantil** (por ejemplo, si tu código es 1234567, tu usuario será `S1234567`).
+* **Usuario:** Tu nombre de usuario sigue el formato **S#_de_código_estudiantil** (por ejemplo, si tu código es 1234567, tu usuario será `S1234567`).
 * **Contraseña Global:** `9087`
 
 **Ejemplo Práctico de Conexión:**
@@ -160,13 +176,19 @@ Utilizaremos el Método de Monte Carlo para calcular el valor de Pi. Este es un 
 ```bash
 # Compilación con optimización y enlace matemático (-lm)
 mpicc.mpich -O2 pi_montecarlo.c -o pi_montecarlo -lm
+```
 
-# Ejecutar usando 1 solo nodo (Línea Base para medir)
+```bash
+# Ejecutar usando 1 solo nodo (Línea Base para medir).
 /usr/bin/mpiexec.mpich -genv UCX_NET_DEVICES=eth0 -n 1 ./pi_montecarlo
-
+```
+ Ten paciencia. Deberás esperar unos minutos ya que se está ejecutando en un solo nodo.
+```bash
 # Ejecutar usando 4 nodos
 /usr/bin/mpiexec.mpich -genv UCX_NET_DEVICES=eth0 -n 4 -f machinefile ./pi_montecarlo
+```
 
+```bash
 # Ejecutar usando los 8 nodos del clúster
 /usr/bin/mpiexec.mpich -genv UCX_NET_DEVICES=eth0 -n 8 -f machinefile ./pi_montecarlo
 ```
